@@ -13,7 +13,7 @@ Just LiveReload. For Visual Studio Code.
 
 ## Getting Started
 
-1. [Install The extension](https://marketplace.visualstudio.com/items?itemName=thebearingedge.livereload-server)
+1. [Install the extension](https://marketplace.visualstudio.com/items?itemName=thebearingedge.livereload-server).
 1. Open a project in VS Code.
 1. Go live in one of three ways:
     - Click the **LiveReload button** while an HTML document is open.
