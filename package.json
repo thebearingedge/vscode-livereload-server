@@ -18,36 +18,42 @@
     "commands": [
       {
         "command": "livereload-server.open",
-        "title": "Open with LiveReload Server"
+        "title": "Open with LiveReload Server",
+        "category": "LiveReload Server"
       },
       {
-        "command": "livereload-server.start",
-        "title": "LiveReload Server: Start"
-      },
-      {
-        "command": "livereload-server.close",
-        "title": "LiveReload Server: Close"
+        "command": "livereload-server.stop",
+        "title": "Stop LiveReload Server",
+        "category": "LiveReload Server"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "livereload-server.open",
-          "when": "workspaceFolderCount > 0"
+          "when": "workbenchState != empty && editorLangId == html"
+        },
+        {
+          "command": "livereload-server.stop"
         }
       ],
       "explorer/context": [
         {
           "command": "livereload-server.open",
           "group": "navigation@10",
-          "when": "workspaceFolderCount > 0"
+          "when": "workbenchState != empty && resourceLangId == html"
+        },
+        {
+          "command": "livereload-server.open",
+          "group": "navigation@10",
+          "when": "workbenchState != empty && explorerResourceIsFolder"
         }
       ],
       "editor/context": [
         {
           "command": "livereload-server.open",
           "group": "navigation@10",
-          "when": "workspaceFolderCount > 0"
+          "when": "workbenchState != empty && editorLangId == html"
         }
       ]
     },
@@ -76,8 +82,10 @@
   "dependencies": {
     "connect-livereload": "^0.6.1",
     "express": "^4.18.1",
+    "http-shutdown": "^1.2.2",
     "livereload": "^0.9.3",
     "livereload-js": "^3.4.0",
+    "open": "^8.4.0",
     "serve-index": "^1.9.1"
   },
   "devDependencies": {
