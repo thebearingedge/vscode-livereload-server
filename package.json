@@ -3,7 +3,7 @@
   "publisher": "thebearingedge",
   "displayName": "LiveReload Server",
   "description": "Just LiveReload. For Visual Studio Code.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.35.0"
   },
@@ -17,8 +17,13 @@
   "contributes": {
     "commands": [
       {
-        "command": "livereload-server.open",
+        "command": "livereload-server.openDocument",
         "title": "Open with LiveReload Server",
+        "category": "LiveReload Server"
+      },
+      {
+        "command": "livereload-server.openFolder",
+        "title": "Open with LiveReload Server (root)",
         "category": "LiveReload Server"
       },
       {
@@ -30,7 +35,7 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "livereload-server.open",
+          "command": "livereload-server.openDocument",
           "when": "workbenchState != empty && editorLangId == html"
         },
         {
@@ -39,19 +44,19 @@
       ],
       "explorer/context": [
         {
-          "command": "livereload-server.open",
+          "command": "livereload-server.openDocument",
           "group": "navigation@10",
           "when": "workbenchState != empty && resourceLangId == html"
         },
         {
-          "command": "livereload-server.open",
+          "command": "livereload-server.openFolder",
           "group": "navigation@10",
           "when": "workbenchState != empty && explorerResourceIsFolder"
         }
       ],
       "editor/context": [
         {
-          "command": "livereload-server.open",
+          "command": "livereload-server.openDocument",
           "group": "navigation@10",
           "when": "workbenchState != empty && editorLangId == html"
         }

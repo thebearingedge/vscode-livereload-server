@@ -17,20 +17,17 @@ type StopServer =
   | (() => Promise<void>)
   | undefined
 
+let button: Button
 let stopServer: StopServer
-let button: vscode.StatusBarItem
 
 export function deactivate(): void {
   stopServer?.()
-  button?.dispose()
+  button.dispose()
 }
 
 export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
-  button = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
-  button.text = '$(broadcast) Go Live'
-  button.command = 'livereload-server.open'
-  button.tooltip = 'Click to run LiveReload Server'
+  button = new Button()
 
   const { port: preferredPort, ...config } =
     vscode.workspace.getConfiguration('liveReloadServer') as unknown as Config
@@ -43,16 +40,26 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
     }
   }))
 
-  subscriptions.push(vscode.commands.registerCommand('livereload-server.open', async uri => {
+  subscriptions.push(vscode.commands.registerCommand('livereload-server.openDocument', async uri => {
     stopServer = await stopServer?.() ?? undefined
     uri ??= vscode.window.activeTextEditor?.document.uri
-    const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.path
-    if (folder == null) return
+    const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.path as string
     const port = await getNextAvailablePort(preferredPort)
     stopServer = await createLiveReloadServer({ ...config, port, folder })
-    button.text = `$(circle-slash) Port : ${port}`
-    button.command = 'livereload-server.stop'
-    button.tooltip = 'Click to stop LiveReload Server'
+    button.start(port)
+    const pathname = path.relative(folder, uri.fsPath)
+    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
+    if (!(await vscode.env.openExternal(browserUrl))) {
+      void vscode.window.showInformationMessage(`LiveReload Server is running at ${browserUrl}`)
+    }
+  }))
+
+  subscriptions.push(vscode.commands.registerCommand('livereload-server.openFolder', async uri => {
+    stopServer = await stopServer?.() ?? undefined
+    const folder = uri.path
+    const port = await getNextAvailablePort(preferredPort)
+    stopServer = await createLiveReloadServer({ ...config, port, folder })
+    button.start(port)
     const pathname = path.relative(folder, uri.fsPath)
     const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
     if (!(await vscode.env.openExternal(browserUrl))) {
@@ -62,9 +69,10 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
     stopServer = await stopServer?.() ?? undefined
-    button.text = '$(broadcast) Go Live'
-    button.command = 'livereload-server.open'
-    button.tooltip = 'Click to run LiveReload Server'
+    button.stop()
+    if (vscode.window.activeTextEditor?.document.languageId !== 'html') {
+      button.hide()
+    }
   }))
 
   if (vscode.window.activeTextEditor?.document.languageId === 'html') {
@@ -120,4 +128,41 @@ async function getNextAvailablePort(preferredPort: number): Promise<number> {
       .once('listening', () => server.close(() => resolve(preferredPort)))
       .listen(preferredPort)
   })
+}
+
+class Button {
+
+  ui: vscode.StatusBarItem
+
+  constructor() {
+    this.ui = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+    this.ui.text = '$(broadcast) Go Live'
+    this.ui.command = 'livereload-server.openDocument'
+    this.ui.tooltip = 'Click to run LiveReload Server'
+  }
+
+  show(): void {
+    this.ui.show()
+  }
+
+  hide(): void {
+    this.ui.hide()
+  }
+
+  start(port: number): void {
+    this.ui.text = `$(circle-slash) Port : ${port}`
+    this.ui.command = 'livereload-server.stop'
+    this.ui.tooltip = 'Click to stop LiveReload Server'
+  }
+
+  stop(): void {
+    this.ui.text = '$(broadcast) Go Live'
+    this.ui.command = 'livereload-server.openDocument'
+    this.ui.tooltip = 'Click to run LiveReload Server'
+  }
+
+  dispose(): void {
+    this.ui.dispose()
+  }
+
 }
