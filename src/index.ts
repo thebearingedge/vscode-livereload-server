@@ -12,6 +12,7 @@ import connectLiveReload from 'connect-livereload'
 type Config = {
   port: number
   delay: number
+  hostname: string
 }
 
 type StopServer =
@@ -30,7 +31,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
   button = new ControlButton()
 
-  const { port: preferredPort, ...config } =
+  const { hostname, port: preferredPort, ...config } =
     vscode.workspace.getConfiguration('liveReloadServer') as unknown as Config
 
   subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -46,7 +47,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
     stopServer = await createLiveReloadServer({ ...config, port, folder })
     button.start(port)
     const pathname = path.relative(folder, uri.fsPath)
-    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
+    const browserUrl = vscode.Uri.parse(`http://${hostname}:${port}/${pathname}`)
     if (!(await vscode.env.openExternal(browserUrl))) {
       void vscode.window.showInformationMessage(`LiveReload Server is running at ${browserUrl}`)
     }
@@ -57,7 +58,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
     const port = await getNextAvailablePort(preferredPort)
     stopServer = await createLiveReloadServer({ ...config, port, folder: uri.path })
     button.start(port)
-    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/`)
+    const browserUrl = vscode.Uri.parse(`http://${hostname}:${port}/`)
     if (!(await vscode.env.openExternal(browserUrl))) {
       void vscode.window.showInformationMessage(`LiveReload Server is running at ${browserUrl}`)
     }
@@ -71,7 +72,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
   button.init(vscode.window.activeTextEditor?.document.languageId === 'html')
 }
 
-type ServerConfig = Config & {
+type ServerConfig = Pick<Config, 'port' | 'delay'> & {
   folder: string
 }
 

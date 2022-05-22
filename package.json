@@ -3,7 +3,7 @@
   "publisher": "thebearingedge",
   "displayName": "LiveReload Server",
   "description": "Just LiveReload. For Visual Studio Code.",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.35.0"
   },
@@ -78,6 +78,11 @@
           "default": 100,
           "minimum": 0,
           "markdownDescription": "Milliseconds of delay before reload."
+        },
+        "liveReloadServer.hostname": {
+          "type": "string",
+          "default": "0.0.0.0",
+          "markdownDescription": "Customize the hostname to auto-open in the browser."
         }
       }
     }
