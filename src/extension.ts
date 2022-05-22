@@ -1,4 +1,5 @@
 import net from 'net'
+import util from 'util'
 import path from 'path'
 import http from 'http'
 import vscode from 'vscode'
@@ -17,27 +18,24 @@ type StopServer =
   | (() => Promise<void>)
   | undefined
 
-let button: Button
+let button: ControlButton
 let stopServer: StopServer
 
 export function deactivate(): void {
   void stopLiveReloadServer()
-  button.dispose()
+  button?.dispose()
 }
 
 export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
-  button = new Button()
+  button = new ControlButton()
 
   const { port: preferredPort, ...config } =
     vscode.workspace.getConfiguration('liveReloadServer') as unknown as Config
 
   subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
-    if (editor?.document.languageId === 'html') {
-      button.show()
-    } else if (stopServer == null) {
-      button.hide()
-    }
+    if (editor?.document.languageId === 'html') return button.show()
+    if (stopServer == null) return button.hide()
   }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.openDocument', async uri => {
@@ -67,11 +65,10 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
     await stopLiveReloadServer()
-    button.stop()
-    if (vscode.window.activeTextEditor?.document.languageId !== 'html') button.hide()
+    button.stop(vscode.window.activeTextEditor?.document.languageId !== 'html')
   }))
 
-  if (vscode.window.activeTextEditor?.document.languageId === 'html') button.show()
+  button.init(vscode.window.activeTextEditor?.document.languageId === 'html')
 }
 
 type ServerConfig = Config & {
@@ -95,53 +92,46 @@ async function createLiveReloadServer(config: ServerConfig): Promise<StopServer>
     .use(express.static(folder))
     .use(serveIndex(folder, { icons: true }))
     .use((req, res, next) => {
-      if (req.path === '/livereload.js') {
-        res.sendFile(require.resolve('livereload-js'))
-        return
-      }
-      next()
+      req.path === '/livereload.js'
+        ? res.sendFile(require.resolve('livereload-js'))
+        : next()
     })
 
   const server = shutdown(http.createServer(handler))
   const livereload = createServer({ server, port, delay, noListen: true })
 
   return new Promise((resolve, reject) => {
-    server.once('error', err => {
-      livereload.close()
-      reject(err)
-    })
-    server.once('listening', () => {
-      resolve(() => new Promise((resolve, reject) => {
-        livereload.watcher.close()
-        server.shutdown(err => err != null ? reject(err) : resolve())
-      }))
-    })
+    server.once('error', () => server.shutdown(reject))
+    server.once('close', () => livereload.watcher.close())
+    server.once('listening', () => resolve(util.promisify(server.forceShutdown)))
     livereload.watch(folder)
     livereload.listen()
   })
 }
 
-async function getNextAvailablePort(preferredPort: number): Promise<number> {
+async function getNextAvailablePort(port: number): Promise<number> {
   return new Promise<number>((resolve, reject) => {
     const server: net.Server = net
       .createServer()
       .on('error', (err: NodeJS.ErrnoException) => {
-        err.code === 'EADDRINUSE' ? server.listen(++preferredPort) : reject(err)
+        err.code === 'EADDRINUSE'
+          ? server.listen(++port)
+          : reject(err)
       })
-      .once('listening', () => server.close(() => resolve(preferredPort)))
-      .listen(preferredPort)
+      .once('listening', () => server.close(() => resolve(port)))
+      .listen(port)
   })
 }
 
-class Button {
+class ControlButton {
 
-  ui: vscode.StatusBarItem
+  ui = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
 
-  constructor() {
-    this.ui = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
-    this.ui.text = '$(broadcast) Go Live'
+  init(show: boolean): void {
+    this.ui.text = '$(broadcast) LiveReload'
     this.ui.command = 'livereload-server.openDocument'
-    this.ui.tooltip = 'Click to run LiveReload Server'
+    this.ui.tooltip = 'Open with LiveReload Server'
+    show ? this.show() : this.hide()
   }
 
   show(): void {
@@ -155,13 +145,11 @@ class Button {
   start(port: number): void {
     this.ui.text = `$(circle-slash) Port : ${port}`
     this.ui.command = 'livereload-server.stop'
-    this.ui.tooltip = 'Click to stop LiveReload Server'
+    this.ui.tooltip = 'Stop LiveReload Server'
   }
 
-  stop(): void {
-    this.ui.text = '$(broadcast) Go Live'
-    this.ui.command = 'livereload-server.openDocument'
-    this.ui.tooltip = 'Click to run LiveReload Server'
+  stop(hide: boolean): void {
+    this.init(!hide)
   }
 
   dispose(): void {
