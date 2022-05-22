@@ -21,7 +21,7 @@ let button: Button
 let stopServer: StopServer
 
 export function deactivate(): void {
-  stopServer?.()
+  void stopLiveReloadServer()
   button.dispose()
 }
 
@@ -41,7 +41,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
   }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.openDocument', async uri => {
-    stopServer = await stopServer?.() ?? undefined
+    await stopLiveReloadServer()
     uri ??= vscode.window.activeTextEditor?.document.uri
     const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.path as string
     const port = await getNextAvailablePort(preferredPort)
@@ -55,33 +55,35 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
   }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.openFolder', async uri => {
-    stopServer = await stopServer?.() ?? undefined
-    const folder = uri.path
+    await stopLiveReloadServer()
     const port = await getNextAvailablePort(preferredPort)
-    stopServer = await createLiveReloadServer({ ...config, port, folder })
+    stopServer = await createLiveReloadServer({ ...config, port, folder: uri.path })
     button.start(port)
-    const pathname = path.relative(folder, uri.fsPath)
-    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
+    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/`)
     if (!(await vscode.env.openExternal(browserUrl))) {
       void vscode.window.showInformationMessage(`LiveReload Server is running at ${browserUrl}`)
     }
   }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
-    stopServer = await stopServer?.() ?? undefined
+    await stopLiveReloadServer()
     button.stop()
-    if (vscode.window.activeTextEditor?.document.languageId !== 'html') {
-      button.hide()
-    }
+    if (vscode.window.activeTextEditor?.document.languageId !== 'html') button.hide()
   }))
 
-  if (vscode.window.activeTextEditor?.document.languageId === 'html') {
-    button.show()
-  }
+  if (vscode.window.activeTextEditor?.document.languageId === 'html') button.show()
 }
 
 type ServerConfig = Config & {
   folder: string
+}
+
+async function stopLiveReloadServer(): Promise<void> {
+  try {
+    await stopServer?.()
+  } finally {
+    stopServer = undefined
+  }
 }
 
 async function createLiveReloadServer(config: ServerConfig): Promise<StopServer> {
@@ -104,17 +106,18 @@ async function createLiveReloadServer(config: ServerConfig): Promise<StopServer>
   const livereload = createServer({ server, port, delay, noListen: true })
 
   return new Promise((resolve, reject) => {
-    livereload.watch(folder)
     server.once('error', err => {
       livereload.close()
       reject(err)
     })
-    livereload.listen(() => {
+    server.once('listening', () => {
       resolve(() => new Promise((resolve, reject) => {
         livereload.watcher.close()
         server.shutdown(err => err != null ? reject(err) : resolve())
       }))
     })
+    livereload.watch(folder)
+    livereload.listen()
   })
 }
 
