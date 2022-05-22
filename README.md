@@ -6,7 +6,6 @@ Just LiveReload. For Visual Studio Code.
 
 ## Simple
 
-- Only supports HTML documents.
 - Auto-refreshes when watched folder changes.
 - "Hot" reloads linked CSS.
 - Pick any HTML document to use its containing workspace as the server root.
@@ -17,9 +16,9 @@ Just LiveReload. For Visual Studio Code.
 1. [Install The extension](https://marketplace.visualstudio.com/items?itemName=thebearingedge.livereload-server)
 1. Open a project in VS Code.
 1. Go live in one of three ways:
-    - Click the **LiveReload button** while an HTML document is open
-    - **Right-click a folder** to open it with LiveReload
-    - Use **the command palette** while an HTML document is open
+    - Click the **LiveReload button** while an HTML document is open.
+    - **Right-click a folder** to open it with LiveReload.
+    - Use **the command palette** while an HTML document is open.
 
 ## Settings
 
@@ -30,4 +29,4 @@ Just LiveReload. For Visual Studio Code.
 
 ## Demo
 
-![Interpolated Values](https://github.com/thebearingedge/vscode-sql-lit/raw/master/images/livereload-server.gif)
+![Interpolated Values](https://raw.githubusercontent.com/thebearingedge/livereload-server-vscode/main/images/livereload-server.gif)
