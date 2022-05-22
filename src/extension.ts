@@ -1,42 +1,55 @@
+import net from 'net'
 import path from 'path'
 import http from 'http'
 import vscode from 'vscode'
 import express from 'express'
 import serveIndex from 'serve-index'
 import shutdown from 'http-shutdown'
-import connectLiveReload from 'connect-livereload'
 import { createServer } from 'livereload'
+import connectLiveReload from 'connect-livereload'
 
-let closeServer: (() => Promise<void>) | undefined
-
-export function deactivate(): void {
-  closeServer?.()
-}
-
-export function activate({ subscriptions }: vscode.ExtensionContext): void {
-
-  subscriptions.push(vscode.commands.registerCommand('livereload-server.open', async uri => {
-    closeServer = await closeServer?.() ?? undefined
-    uri ??= vscode.window.activeTextEditor?.document.uri
-    const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.path
-    if (folder == null) return
-    const urlPath = path.relative(folder, uri.fsPath)
-    closeServer = await createLiveReloadServer({ folder, port: 5500, delay: 100 })
-    void vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://localhost:${5500}/${urlPath}`))
-  }))
-
-  subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
-    closeServer = await closeServer?.() ?? undefined
-  }))
-}
-
-type LiveReloadServerConfig = {
-  folder: string
+type Config = {
   port: number
   delay: number
 }
 
-async function createLiveReloadServer(config: LiveReloadServerConfig): Promise<() => Promise<void>> {
+type StopServer =
+  | (() => Promise<void>)
+  | undefined
+
+let stopServer: StopServer
+
+export function deactivate(): void {
+  stopServer?.()
+}
+
+export function activate({ subscriptions }: vscode.ExtensionContext): void {
+
+  const { port: preferredPort, ...config } =
+    vscode.workspace.getConfiguration('liveReloadServer') as unknown as Config
+
+  subscriptions.push(vscode.commands.registerCommand('livereload-server.open', async uri => {
+    stopServer = await stopServer?.() ?? undefined
+    uri ??= vscode.window.activeTextEditor?.document.uri
+    const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.path
+    if (folder == null) return
+    const port = await getNextAvailablePort(preferredPort)
+    stopServer = await createLiveReloadServer({ ...config, port, folder })
+    const pathname = path.relative(folder, uri.fsPath)
+    const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
+    void vscode.commands.executeCommand('vscode.open', browserUrl)
+  }))
+
+  subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
+    stopServer = await stopServer?.() ?? undefined
+  }))
+}
+
+type ServerConfig = Config & {
+  folder: string
+}
+
+async function createLiveReloadServer(config: ServerConfig): Promise<StopServer> {
 
   const { folder, port, delay } = config
 
@@ -56,18 +69,28 @@ async function createLiveReloadServer(config: LiveReloadServerConfig): Promise<(
   const livereload = createServer({ server, port, delay, noListen: true })
 
   return new Promise((resolve, reject) => {
+    livereload.watch(folder)
+    server.once('error', err => {
+      livereload.close()
+      reject(err)
+    })
     livereload.listen(() => {
-      livereload.watch(folder)
-      livereload.server.on('error', reject)
-      livereload.server.once('connection', () => {
-        setTimeout(() => livereload.sendAllClients(JSON.stringify({
-          command: 'reload',
-          path: '*'
-        })), 250)
-      })
       resolve(() => new Promise((resolve, reject) => {
+        livereload.watcher.close()
         server.shutdown(err => err != null ? reject(err) : resolve())
       }))
     })
+  })
+}
+
+async function getNextAvailablePort(preferredPort: number): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const server: net.Server = net
+      .createServer()
+      .on('error', (err: NodeJS.ErrnoException) => {
+        err.code === 'EADDRINUSE' ? server.listen(++preferredPort) : reject(err)
+      })
+      .once('listening', () => server.close(() => resolve(preferredPort)))
+      .listen(preferredPort)
   })
 }

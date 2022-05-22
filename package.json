@@ -23,7 +23,7 @@
       },
       {
         "command": "livereload-server.stop",
-        "title": "Stop LiveReload Server",
+        "title": "Stop Server",
         "category": "LiveReload Server"
       }
     ],
@@ -58,18 +58,21 @@
       ]
     },
     "configuration": {
-      "liveReloadServer.port": {
-        "type": "number",
-        "default": 5500,
-        "minimum": 1025,
-        "maximum": 65535,
-        "markdownDescription": "Set the server port. `number`\n\r*between 1025 and 65535*"
-      },
-      "liveReloadServer.delay": {
-        "type": "number",
-        "default": 100,
-        "minimum": 0,
-        "markdownDescription": "Delay before reload."
+      "title": "LiveReload Server",
+      "properties": {
+        "liveReloadServer.port": {
+          "type": "number",
+          "markdownDescription": "Set the server port. `number`\n\r*usually between 1024 and 65535*",
+          "minimum": 1024,
+          "maximum": 65535,
+          "default": 5500
+        },
+        "liveReloadServer.delay": {
+          "type": "number",
+          "default": 100,
+          "minimum": 0,
+          "markdownDescription": "Milliseconds of delay before reload."
+        }
       }
     }
   },
