@@ -5,7 +5,7 @@
   "description": "Just LiveReload. For Visual Studio Code.",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.66.0"
+    "vscode": "^1.22.0"
   },
   "categories": [
     "Other"

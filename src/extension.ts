@@ -18,15 +18,30 @@ type StopServer =
   | undefined
 
 let stopServer: StopServer
+let button: vscode.StatusBarItem
 
 export function deactivate(): void {
   stopServer?.()
+  button?.dispose()
 }
 
 export function activate({ subscriptions }: vscode.ExtensionContext): void {
 
+  button = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+  button.text = '$(broadcast) Go Live'
+  button.command = 'livereload-server.open'
+  button.tooltip = 'Click to run LiveReload Server'
+
   const { port: preferredPort, ...config } =
     vscode.workspace.getConfiguration('liveReloadServer') as unknown as Config
+
+  subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
+    if (editor?.document.languageId === 'html') {
+      button.show()
+    } else if (stopServer == null) {
+      button.hide()
+    }
+  }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.open', async uri => {
     stopServer = await stopServer?.() ?? undefined
@@ -35,14 +50,26 @@ export function activate({ subscriptions }: vscode.ExtensionContext): void {
     if (folder == null) return
     const port = await getNextAvailablePort(preferredPort)
     stopServer = await createLiveReloadServer({ ...config, port, folder })
+    button.text = `$(circle-slash) Port : ${port}`
+    button.command = 'livereload-server.stop'
+    button.tooltip = 'Click to stop LiveReload Server'
     const pathname = path.relative(folder, uri.fsPath)
     const browserUrl = vscode.Uri.parse(`http://localhost:${port}/${pathname}`)
-    void vscode.commands.executeCommand('vscode.open', browserUrl)
+    if (!(await vscode.env.openExternal(browserUrl))) {
+      void vscode.window.showInformationMessage(`LiveReload Server is running at ${browserUrl}`)
+    }
   }))
 
   subscriptions.push(vscode.commands.registerCommand('livereload-server.stop', async () => {
     stopServer = await stopServer?.() ?? undefined
+    button.text = '$(broadcast) Go Live'
+    button.command = 'livereload-server.open'
+    button.tooltip = 'Click to run LiveReload Server'
   }))
+
+  if (vscode.window.activeTextEditor?.document.languageId === 'html') {
+    button.show()
+  }
 }
 
 type ServerConfig = Config & {
