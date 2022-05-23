@@ -3,7 +3,7 @@
   "publisher": "thebearingedge",
   "displayName": "LiveReload Server",
   "description": "Just LiveReload. For Visual Studio Code.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.35.0"
   },
