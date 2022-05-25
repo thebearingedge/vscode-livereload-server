@@ -91,7 +91,10 @@ async function createLiveReloadServer(config: ServerConfig): Promise<StopServer>
   const handler = express()
     .use(connectLiveReload({ port }))
     .use(express.static(folder))
-    .use(serveIndex(folder, { icons: true }))
+    .use(serveIndex(folder, {
+      template: path.join(require.resolve('serve-index'), '..', 'public', 'directory.html'),
+      stylesheet: path.join(require.resolve('serve-index'), '..', 'public', 'style.css')
+    }))
     .use((req, res, next) => {
       req.path === '/livereload.js'
         ? res.sendFile(require.resolve('livereload-js'))
