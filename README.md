@@ -25,7 +25,7 @@ Just LiveReload. For Visual Studio Code.
 | Value      | Details                                                                                           | Default     |
 | ---------- | ------------------------------------------------------------------------------------------------- | ----------- |
 | `liveReloadServer.port`     | The port on which LiveServer will listen. If unavailable, the next available port will be chosen. | `5500`      |
-| `liveReloadServer.hostname` | Customize the hostname to auto-open in the browser.                                               | `"0.0.0.0"` |
+| `liveReloadServer.hostname` | Customize the hostname to auto-open in the browser.                                               | `"localhost"` |
 | `liveReloadServer.delay`    | An arbitrary amount of time to wait after a file is saved before triggering a reload.             | `100`       |
 
 ## Demo
