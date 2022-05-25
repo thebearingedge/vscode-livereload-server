@@ -92,6 +92,7 @@ async function createLiveReloadServer(config: ServerConfig): Promise<StopServer>
     .use(connectLiveReload({ port }))
     .use(express.static(folder))
     .use(serveIndex(folder, {
+      icons: true,
       template: path.join(require.resolve('serve-index'), '..', 'public', 'directory.html'),
       stylesheet: path.join(require.resolve('serve-index'), '..', 'public', 'style.css')
     }))
