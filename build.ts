@@ -16,7 +16,6 @@ void esbuild.build({
     'batch',
     'vscode',
     'fsevents',
-    'serve-index',
     'livereload-js'
   ],
   ...argv
