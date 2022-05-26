@@ -150,6 +150,7 @@ class ControlButton {
     this.ui.text = `$(circle-slash) Port : ${port}`
     this.ui.command = 'livereload-server.stop'
     this.ui.tooltip = 'Stop LiveReload Server'
+    this.show()
   }
 
   stop(hide: boolean): void {
