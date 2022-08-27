@@ -1,4 +1,4 @@
-# livereload-server-vscode
+# vscode-livereload-server
 
 [![Visual Studio Marketplace](https://vsmarketplacebadge.apphb.com/version/thebearingedge.livereload-server.svg)](https://marketplace.visualstudio.com/items?itemName=thebearingedge.livereload-server)
 
