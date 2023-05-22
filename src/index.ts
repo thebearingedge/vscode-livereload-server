@@ -89,14 +89,14 @@ async function createLiveReloadServer(config: ServerConfig): Promise<StopServer>
   const { folder, port, delay } = config
 
   const handler = express()
-    .use(connectLiveReload({ src: '/livereload.js?snipver=1' }))
+    .use(connectLiveReload({ src: 'livereload.js?snipver=1' }))
     .use(express.static(folder))
     .use(serveIndex(folder, {
       template: path.join(require.resolve('serve-index'), '..', 'public', 'directory.html'),
       stylesheet: path.join(require.resolve('serve-index'), '..', 'public', 'style.css')
     }))
     .use((req, res, next) => {
-      req.path === '/livereload.js'
+      req.path.endsWith('/livereload.js')
         ? res.sendFile(require.resolve('livereload-js'))
         : next()
     })
